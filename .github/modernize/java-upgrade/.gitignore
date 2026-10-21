@@ -1,0 +1,24 @@
+# Archivos compilados de Java/Spring Boot
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Archivos de IDE (VS Code, IntelliJ, Eclipse)
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Opcional pero recomendado: Si tu application.yml tiene la contraseña real de tu SQL Server,
+# es mejor no subirla. Si es solo para la universidad y es local, puedes dejarla, 
+# pero ten en cuenta que cualquiera que vea el repo verá tu contraseña.
+# src/main/resources/application.yml 
