@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/styles.css">
+    <title>Gestión de Medicamentos</title>
+</head>
+<body>
+
+    <!-- Encabezado Principal -->
+    <h1>Sistema de Gestión de Medicamentos</h1>
+    <hr>
+
+    <!-- Formulario para agregar un nuevo medicamento -->
+    <h2>Registrar Nuevo Medicamento</h2>
+    <form action="/api/medicamentos" method="POST">
+        <div>
+            <label for="nombre">Nombre del Medicamento:</label><br>
+            <input type="text" id="nombre" name="nombre" placeholder="Ej. Paracetamol" required>
+        </div>
+        <br>
+        <div>
+            <label for="laboratorio">Laboratorio / Marca:</label><br>
+            <input type="text" id="laboratorio" name="laboratorio" placeholder="Ej. Bayer" required>
+        </div>
+        <br>
+        <div>
+            <label for="stock">Cantidad en Stock:</label><br>
+            <input type="number" id="stock" name="stock" min="1" placeholder="Ej. 50" required>
+        </div>
+        <br>
+        <div>
+            <label for="precio">Precio (S/):</label><br>
+            <input type="number" id="precio" name="precio" step="0.01" placeholder="Ej. 12.50" required>
+        </div>
+        <br>
+        <button type="submit">Guardar Medicamento</button>
+    </form>
+
+    <hr>
+
+    <!-- Tabla para mostrar la lista de medicamentos -->
+    <h2>Lista de Medicamentos Registrados</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Laboratorio</th>
+                <th>Stock</th>
+                <th>Precio</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>Paracetamol 500mg</td>
+                <td>Farmindustria</td>
+                <td>100</td>
+                <td>S/ 2.50</td>
+                <td>
+                    <button type="button">Editar</button>
+                    <button type="button">Eliminar</button>
+                </td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>Ibuprofeno 400mg</td>
+                <td>Bayer</td>
+                <td>45</td>
+                <td>S/ 5.00</td>
+                <td>
+                    <button type="button">Editar</button>
+                    <button type="button">Eliminar</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>
