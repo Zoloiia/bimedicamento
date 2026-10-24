@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/styles.css">
+    <title>Gestión de Medicamentos</title>
+</head>
+<body>
+
+    <!-- ======================================================= -->
+    <!-- ENCABEZADO PRINCIPAL DE LA PÁGINA                       -->
+    <!-- ======================================================= -->
+    <h1>Sistema de Gestión de Medicamentos</h1>
+    <hr>
+
+
+    <!-- ======================================================= -->
+    <!-- SECCIÓN 1: FORMULARIO DE REGISTRO                       -->
+    <!-- Esta sección es para que el usuario ingrese datos       -->
+    <!-- ======================================================= -->
+    <h2>Registrar Nuevo Medicamento</h2>
+    
+    <!-- El elemento <form> agrupa los campos de entrada -->
+    <form action="/api/medicamentos" method="POST">
+        
+        <!-- Campo: Nombre del medicamento -->
+        <div>
+            <label for="nombre">Nombre del Medicamento:</label><br>
+            <input type="text" id="nombre" name="nombre" placeholder="Ej. Paracetamol" required>
+        </div>
+        <br>
+
+        <!-- Campo: Laboratorio o Marca -->
+        <div>
+            <label for="laboratorio">Laboratorio / Marca:</label><br>
+            <input type="text" id="laboratorio" name="laboratorio" placeholder="Ej. Bayer" required>
+        </div>
+        <br>
+
+        <!-- Campo: Cantidad en Stock (solo acepta números) -->
+        <div>
+            <label for="stock">Cantidad en Stock:</label><br>
+            <input type="number" id="stock" name="stock" min="1" placeholder="Ej. 50" required>
+        </div>
+        <br>
+
+        <!-- Campo: Precio del medicamento (acepta decimales) -->
+        <div>
+            <label for="precio">Precio (S/):</label><br>
+            <input type="number" id="precio" name="precio" step="0.01" placeholder="Ej. 12.50" required>
+        </div>
+        <br>
+
+        <!-- Botón para enviar la información del formulario al Backend -->
+        <button type="submit">Guardar Medicamento</button>
+
+    </form>
+
+    <hr>
+
+
+    <!-- ======================================================= -->
+    <!-- SECCIÓN 2: TABLA DE MEDICAMENTOS                        -->
+    <!-- Esta sección muestra la lista de datos almacenados     -->
+    <!-- ======================================================= -->
+    <h2>Lista de Medicamentos Registrados</h2>
+
+    <table border="1">
+        <!-- <thead> define los títulos principales de la tabla -->
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Laboratorio</th>
+                <th>Stock</th>
+                <th>Precio</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <!-- <tbody> contiene las filas con la información de los medicamentos -->
+        <tbody>
+            
+            <!-- Fila 1 de ejemplo -->
+            <tr>
+                <td>1</td>
+                <td>Paracetamol 500mg</td>
+                <td>Farmindustria</td>
+                <td>100</td>
+                <td>S/ 2.50</td>
+                <td>
+                    <!-- Botones de interacción para modificar o borrar registros -->
+                    <button type="button">Editar</button>
+                    <button type="button">Eliminar</button>
+                </td>
+            </tr>
+
+            <!-- Fila 2 de ejemplo -->
+            <tr>
+                <td>2</td>
+                <td>Ibuprofeno 400mg</td>
+                <td>Bayer</td>
+                <td>45</td>
+                <td>S/ 5.00</td>
+                <td>
+                    <button type="button">Editar</button>
+                    <button type="button">Eliminar</button>
+                </td>
+            </tr>
+
+        </tbody>
+    </table>
+
+</body>
+</html>
