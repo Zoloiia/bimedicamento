@@ -7,5 +7,5 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/bimedicamento
     username: postgres
-    password: Tavito19       # La que pusiste al instalar PostgreSQL
+    password: contraseña de PostgreSQL       # La que pusiste al instalar PostgreSQL
     driver-class-name: org.postgresql.Driver
