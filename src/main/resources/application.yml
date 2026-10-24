@@ -1,24 +1,11 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: bi-medicamentos
   datasource:
-    # Nota: Si tu SQL Server es una instancia con nombre (ej. SQLEXPRESS), 
-    # la URL sería: jdbc:sqlserver://localhost:1433;databaseName=db_bi_medicamentos;instanceName=SQLEXPRESS;
-    url: jdbc:sqlserver://localhost:1433;databaseName=db_bi_medicamentos;encrypt=true;trustServerCertificate=true;
-    username: sa  # O el usuario 'sa' o el que hayas configurado en SQL Server
-    password: tu_contraseña_aqui
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-    properties:
-      hibernate:
-        # Dialecto cambiado a SQL Server
-        dialect: org.hibernate.dialect.SQLServerDialect 
-        format_sql: true
-  batch:
-    jdbc:
-      initialize-schema: always
-    job:
-      enabled: false
+    url: jdbc:postgresql://localhost:5432/bimedicamento
+    username: postgres
+    password: Tavito19       # La que pusiste al instalar PostgreSQL
+    driver-class-name: org.postgresql.Driver

@@ -1,0 +1,73 @@
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    color: #1f2937;
+    background: #f8fafc;
+}
+
+h1 { color: #0f766e; }
+h2 { color: #134e4a; }
+hr { border: none; border-top: 1px solid #cbd5e1; margin: 24px 0; }
+
+/* Formulario */
+label { font-weight: 600; }
+
+input[type="text"],
+input[type="number"] {
+    width: 100%;
+    max-width: 360px;
+    padding: 8px;
+    border: 1px solid #94a3b8;
+    border-radius: 6px;
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+input:focus {
+    outline: 2px solid #14b8a6;
+    border-color: #14b8a6;
+}
+
+/* Botones */
+button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    background: #0f766e;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+}
+button:hover { background: #115e59; }
+
+/* "Eliminar" (segundo botón de la celda) en rojo */
+td button:nth-of-type(2) { background: #b91c1c; }
+td button:nth-of-type(2):hover { background: #991b1b; }
+
+#btn-cancelar { background: #64748b; }
+
+/* Mensajes */
+#mensaje.ok    { color: #15803d; font-weight: 600; }
+#mensaje.error { color: #b91c1c; font-weight: 600; }
+
+/* Tabla */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+th, td {
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    text-align: left;
+}
+thead { background: #ccfbf1; }
+tbody tr:hover { background: #f1f5f9; }
+
+/* Colores del estado (semáforo) */
+.estado { font-weight: 700; }
+.estado.normal     { color: #15803d; }   /* verde */
+.estado.stock-bajo { color: #b45309; }   /* naranja */
+.estado.agotado    { color: #b91c1c; }   /* rojo */
