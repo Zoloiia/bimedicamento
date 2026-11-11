@@ -18,7 +18,7 @@
     <description>Gestión de medicamentos con PostgreSQL</description>
 
     <properties>
-        <java.version>25</java.version>
+        <java.version>17</java.version>
     </properties>
 
     <dependencies>

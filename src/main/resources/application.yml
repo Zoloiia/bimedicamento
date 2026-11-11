@@ -9,3 +9,14 @@ spring:
     username: neondb_owner
     password: npg_akWt6h8vFVNp
     driver-class-name: org.postgresql.Driver
+  # Crea tablas, trigger, vista y datos de ejemplo al arrancar.
+  # Los scripts son idempotentes: se pueden ejecutar en cada inicio sin duplicar nada.
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/01_tablas.sql,classpath:db/02_funciones_triggers.sql,classpath:db/03_vistas.sql
+      data-locations: classpath:db/04_datos_ejemplo.sql
+      # Valor especial de Spring: cada archivo se envía completo en una sola ejecución,
+      # así el bloque $$ ... $$ de la función PL/pgSQL no se corta en los ";".
+      separator: "^^^ END OF SCRIPT ^^^"
+      encoding: UTF-8

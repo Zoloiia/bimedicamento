@@ -2,172 +2,342 @@ const API = "/api/medicamentos";   // Definida en MedicamentoController.java
 
 // Elementos del HTML
 const formulario  = document.getElementById("formulario");
+const panelForm   = document.querySelector(".panel-form");
 const tabla       = document.getElementById("tabla-medicamentos");
 const mensaje     = document.getElementById("mensaje");
 const btnGuardar  = document.getElementById("btn-guardar");
 const btnCancelar = document.getElementById("btn-cancelar");
 const titulo      = document.getElementById("titulo-formulario");
+const ayuda       = document.getElementById("ayuda-formulario");
+const buscador    = document.getElementById("buscar");
+const pieLista    = document.getElementById("pie-lista");
+const dialogo     = document.getElementById("dialogo");
+const vpChip      = document.getElementById("vp-chip");
 
-let medicamentos = [];   // Lista que llegó de la base de datos
+const campo = id => document.getElementById(id);
+
+let medicamentos = [];        // Lista que llegó de la base de datos
+let filtroEstado = "TODOS";   // Filtro activo
+let idEditando   = null;
+
+const soles = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
+const entero = new Intl.NumberFormat("es-PE");
+
+// Clase CSS según el estado que calcula PostgreSQL
+const claseEstado = e => ({ "NORMAL": "normal", "STOCK BAJO": "bajo", "AGOTADO": "agotado" }[e] || "");
+
+// Misma regla que la vista v_medicamento_estado, solo para la vista previa
+function estadoDe(stock, minimo) {
+    if (stock === 0) return "AGOTADO";
+    if (stock <= minimo) return "STOCK BAJO";
+    return "NORMAL";
+}
 
 
 // 1. CARGAR: pide la lista al backend y la dibuja
 async function cargarMedicamentos() {
     try {
-        const respuesta = await fetch(API);                  // GET
+        const respuesta = await fetch(API);
         if (!respuesta.ok) throw new Error("Error " + respuesta.status);
         medicamentos = await respuesta.json();
+        dibujarResumen();
         dibujarTabla();
     } catch (error) {
-        mostrarMensaje("No se pudo conectar con el servidor: " + error.message, true);
+        tabla.innerHTML = `<tr class="vacio"><td colspan="6"><strong>No se pudo cargar el inventario</strong>
+            Revisa que el servidor y la base de datos estén en línea. (${error.message})</td></tr>`;
     }
 }
 
 
-// 2. DIBUJAR: una fila <tr> por cada medicamento
+// 2. RESUMEN superior
+function dibujarResumen() {
+    const bajo    = medicamentos.filter(m => m.estado === "STOCK BAJO").length;
+    const agotado = medicamentos.filter(m => m.estado === "AGOTADO").length;
+    const unidades = medicamentos.reduce((s, m) => s + m.stock, 0);
+    const valor    = medicamentos.reduce((s, m) => s + m.stock * Number(m.precio), 0);
+
+    campo("r-total").textContent    = entero.format(medicamentos.length);
+    campo("r-unidades").textContent = entero.format(unidades);
+    campo("r-bajo").textContent     = bajo;
+    campo("r-agotado").textContent  = agotado;
+    campo("r-valor").textContent    = soles.format(valor);
+    campo("r-bajo").classList.toggle("hay", bajo > 0);
+    campo("r-agotado").classList.toggle("hay", agotado > 0);
+}
+
+
+// 3. TABLA con búsqueda y filtro
 function dibujarTabla() {
+    const texto = buscador.value.trim().toLowerCase();
+    const visibles = medicamentos.filter(m =>
+        (filtroEstado === "TODOS" || m.estado === filtroEstado) &&
+        (m.nombre.toLowerCase().includes(texto) || m.laboratorio.toLowerCase().includes(texto))
+    );
+
     tabla.innerHTML = "";
 
-    if (medicamentos.length === 0) {
-        tabla.innerHTML = '<tr><td colspan="8">No hay medicamentos registrados.</td></tr>';
-        return;
+    if (visibles.length === 0) {
+        const fila = document.createElement("tr");
+        fila.className = "vacio";
+        fila.innerHTML = medicamentos.length === 0
+            ? `<td colspan="6"><strong>Aún no hay medicamentos</strong>Registra el primero con el formulario.</td>`
+            : `<td colspan="6"><strong>Sin resultados</strong>Prueba con otra búsqueda o cambia el filtro.</td>`;
+        tabla.appendChild(fila);
     }
 
-    medicamentos.forEach(m => {
+    visibles.forEach((m, i) => {
         const fila = document.createElement("tr");
+        fila.style.animationDelay = Math.min(i * 25, 300) + "ms";
+        if (m.id === idEditando) fila.classList.add("fila-editando");
 
-        // textContent evita que se inyecte HTML malicioso
-        fila.appendChild(celda(m.id));
-        fila.appendChild(celda(m.nombre));
-        fila.appendChild(celda(m.laboratorio));
-        fila.appendChild(celda(m.stock));
-        fila.appendChild(celda(m.stockMinimo));
-        fila.appendChild(celda("S/ " + Number(m.precio).toFixed(2)));
-
-        // Estado con color según lo que calculó PostgreSQL
-        const celdaEstado = celda(m.estado);
-        celdaEstado.className = "estado " + m.estado.toLowerCase().replace(" ", "-");
-        fila.appendChild(celdaEstado);
-
-        // Botones Editar y Eliminar
-        const celdaAcciones = document.createElement("td");
-
-        const btnEditar = document.createElement("button");
-        btnEditar.type = "button";
-        btnEditar.textContent = "Editar";
-        btnEditar.addEventListener("click", () => prepararEdicion(m));
-
-        const btnEliminar = document.createElement("button");
-        btnEliminar.type = "button";
-        btnEliminar.textContent = "Eliminar";
-        btnEliminar.addEventListener("click", () => eliminarMedicamento(m));
-
-        celdaAcciones.append(btnEditar, " ", btnEliminar);
-        fila.appendChild(celdaAcciones);
-
+        fila.append(
+            celda(texto => texto.className = "id", "#" + m.id),
+            celdaMedicamento(m),
+            celdaNivel(m),
+            celda(td => td.className = "num precio", soles.format(Number(m.precio))),
+            celdaEstado(m.estado),
+            celdaAcciones(m)
+        );
         tabla.appendChild(fila);
     });
+
+    pieLista.textContent = medicamentos.length
+        ? `Mostrando ${visibles.length} de ${medicamentos.length} medicamentos`
+        : "";
 }
 
-// Crea una celda <td> con un texto
-function celda(texto) {
+// Celda simple. textContent evita que se inyecte HTML malicioso
+function celda(configurar, texto) {
     const td = document.createElement("td");
     td.textContent = texto;
+    configurar(td);
+    return td;
+}
+
+function celdaMedicamento(m) {
+    const td = document.createElement("td");
+    const nombre = document.createElement("div");
+    nombre.className = "med-nombre";
+    nombre.textContent = m.nombre;
+    const lab = document.createElement("div");
+    lab.className = "med-lab";
+    lab.textContent = m.laboratorio;
+    td.append(nombre, lab);
+    return td;
+}
+
+// Blíster de 10 alvéolos: se llenan según el stock frente a una capacidad
+// de referencia (3 veces el mínimo). El alvéolo marcado es el umbral de alerta.
+function celdaNivel(m) {
+    const td = document.createElement("td");
+    const capacidad = Math.max(m.stockMinimo * 3, 10);
+    const llenos = m.stock === 0 ? 0 : Math.max(1, Math.min(10, Math.round(m.stock / capacidad * 10)));
+    const marca  = Math.max(1, Math.min(10, Math.round(m.stockMinimo / capacidad * 10)));
+
+    const nivel = document.createElement("div");
+    nivel.className = "nivel";
+
+    const blister = document.createElement("div");
+    blister.className = "blister " + claseEstado(m.estado);
+    blister.setAttribute("role", "img");
+    blister.setAttribute("aria-label", `${m.stock} unidades, mínimo ${m.stockMinimo}`);
+    for (let i = 1; i <= 10; i++) {
+        const a = document.createElement("span");
+        a.className = "alveolo" + (i <= llenos ? " lleno" : "") + (i === marca ? " minimo" : "");
+        blister.appendChild(a);
+    }
+
+    const txt = document.createElement("div");
+    txt.className = "nivel-texto";
+    txt.textContent = entero.format(m.stock) + " u.";
+    const min = document.createElement("small");
+    min.textContent = "mín. " + m.stockMinimo;
+    txt.appendChild(min);
+
+    nivel.append(blister, txt);
+    td.appendChild(nivel);
+    return td;
+}
+
+function celdaEstado(estado) {
+    const td = document.createElement("td");
+    const chip = document.createElement("span");
+    chip.className = "chip " + claseEstado(estado);
+    chip.textContent = estado.charAt(0) + estado.slice(1).toLowerCase();
+    td.appendChild(chip);
+    return td;
+}
+
+const ICONO_EDITAR = '<svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M14 8l2 2"/></svg>';
+const ICONO_BORRAR = '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+
+function celdaAcciones(m) {
+    const td = document.createElement("td");
+    const caja = document.createElement("div");
+    caja.className = "acciones";
+
+    const editar = document.createElement("button");
+    editar.type = "button";
+    editar.className = "icono-btn";
+    editar.title = "Editar";
+    editar.setAttribute("aria-label", "Editar " + m.nombre);
+    editar.innerHTML = ICONO_EDITAR;
+    editar.addEventListener("click", () => prepararEdicion(m));
+
+    const borrar = document.createElement("button");
+    borrar.type = "button";
+    borrar.className = "icono-btn borrar";
+    borrar.title = "Eliminar";
+    borrar.setAttribute("aria-label", "Eliminar " + m.nombre);
+    borrar.innerHTML = ICONO_BORRAR;
+    borrar.addEventListener("click", () => eliminarMedicamento(m));
+
+    caja.append(editar, borrar);
+    td.appendChild(caja);
     return td;
 }
 
 
-// 3. GUARDAR: crea (POST) o actualiza (PUT) según haya un ID
+// 4. GUARDAR: crea (POST) o actualiza (PUT) según haya un ID
 formulario.addEventListener("submit", async (evento) => {
-    evento.preventDefault();   // Evita recargar la página
+    evento.preventDefault();
 
-    const id = document.getElementById("id").value;
+    if (!formulario.checkValidity()) {
+        mostrarMensaje("Completa todos los campos con valores válidos (sin negativos).", true);
+        formulario.reportValidity();
+        return;
+    }
 
-    // Nombres que espera Medicamento.java
+    const id = campo("id").value;
     const datos = {
-        nombre:       document.getElementById("nombre").value.trim(),
-        laboratorio:  document.getElementById("laboratorio").value.trim(),
-        stock:        parseInt(document.getElementById("stock").value, 10),
-        stockMinimo:  parseInt(document.getElementById("stockMinimo").value, 10),
-        precio:       parseFloat(document.getElementById("precio").value)
+        nombre:      campo("nombre").value.trim(),
+        laboratorio: campo("laboratorio").value.trim(),
+        stock:       parseInt(campo("stock").value, 10),
+        stockMinimo: parseInt(campo("stockMinimo").value, 10),
+        precio:      parseFloat(campo("precio").value)
     };
 
-    const url    = id ? `${API}/${id}` : API;
-    const metodo = id ? "PUT" : "POST";
-
+    btnGuardar.disabled = true;
     try {
-        const respuesta = await fetch(url, {
-            method: metodo,
+        const respuesta = await fetch(id ? `${API}/${id}` : API, {
+            method: id ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(datos)
         });
+        if (!respuesta.ok) throw new Error(await respuesta.text() || "Error " + respuesta.status);
 
-        if (!respuesta.ok) {
-            throw new Error(await respuesta.text());   // Motivo del error
-        }
-
-        mostrarMensaje(id ? "Medicamento actualizado." : "Medicamento registrado.", false);
+        mostrarMensaje(id ? `«${datos.nombre}» actualizado.` : `«${datos.nombre}» registrado.`, false);
         salirModoEdicion();
-        cargarMedicamentos();                          // Refresca la tabla
+        cargarMedicamentos();
     } catch (error) {
         mostrarMensaje(error.message, true);
+    } finally {
+        btnGuardar.disabled = false;
     }
 });
 
 
-// 4. EDITAR: pasa los datos de la fila al formulario
+// 5. EDITAR: pasa los datos de la fila al formulario
 function prepararEdicion(m) {
-    document.getElementById("id").value           = m.id;
-    document.getElementById("nombre").value       = m.nombre;
-    document.getElementById("laboratorio").value  = m.laboratorio;
-    document.getElementById("stock").value        = m.stock;
-    document.getElementById("stockMinimo").value  = m.stockMinimo;
-    document.getElementById("precio").value       = m.precio;
+    idEditando = m.id;
+    campo("id").value          = m.id;
+    campo("nombre").value      = m.nombre;
+    campo("laboratorio").value = m.laboratorio;
+    campo("stock").value       = m.stock;
+    campo("stockMinimo").value = m.stockMinimo;
+    campo("precio").value      = m.precio;
 
-    titulo.textContent      = "Editar Medicamento (ID " + m.id + ")";
-    btnGuardar.textContent  = "Actualizar Medicamento";
-    btnCancelar.hidden      = false;
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    titulo.textContent     = "Editar medicamento #" + m.id;
+    ayuda.textContent      = "Los cambios quedan registrados en la auditoría.";
+    btnGuardar.textContent = "Guardar cambios";
+    btnCancelar.hidden     = false;
+    panelForm.classList.add("editando");
+    mostrarMensaje("", false);
+    actualizarVistaPrevia();
+    dibujarTabla();
+    panelForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    campo("nombre").focus({ preventScroll: true });
 }
 
-// Vuelve al modo "registrar nuevo"
 function salirModoEdicion() {
+    idEditando = null;
     formulario.reset();
-    document.getElementById("id").value = "";
-    document.getElementById("stockMinimo").value = 10;
-    titulo.textContent     = "Registrar Nuevo Medicamento";
-    btnGuardar.textContent = "Guardar Medicamento";
+    campo("id").value = "";
+    campo("stockMinimo").value = 10;
+    titulo.textContent     = "Registrar medicamento";
+    ayuda.textContent      = "Completa los datos y guarda. El estado se calcula solo.";
+    btnGuardar.textContent = "Guardar medicamento";
     btnCancelar.hidden     = true;
+    panelForm.classList.remove("editando");
+    actualizarVistaPrevia();
 }
 
 btnCancelar.addEventListener("click", () => {
     salirModoEdicion();
     mostrarMensaje("", false);
+    dibujarTabla();
 });
 
 
-// 5. ELIMINAR: pide confirmación y llama a DELETE
-async function eliminarMedicamento(m) {
-    if (!confirm(`¿Eliminar "${m.nombre}"? Esta acción quedará registrada en la auditoría.`)) {
+// 6. ELIMINAR con diálogo de confirmación
+function eliminarMedicamento(m) {
+    campo("dialogo-texto").textContent =
+        `Se eliminará «${m.nombre}» de ${m.laboratorio}. La acción queda registrada en la auditoría.`;
+    dialogo.returnValue = "";
+    dialogo.showModal();
+    dialogo.addEventListener("close", async () => {
+        if (dialogo.returnValue !== "si") return;
+        try {
+            const respuesta = await fetch(`${API}/${m.id}`, { method: "DELETE" });
+            if (!respuesta.ok) throw new Error("No se pudo eliminar (error " + respuesta.status + ").");
+            if (idEditando === m.id) salirModoEdicion();
+            mostrarMensaje(`«${m.nombre}» eliminado.`, false);
+            cargarMedicamentos();
+        } catch (error) {
+            mostrarMensaje(error.message, true);
+        }
+    }, { once: true });
+}
+
+
+// 7. Vista previa del estado mientras se escribe
+function actualizarVistaPrevia() {
+    const s = campo("stock").value, min = campo("stockMinimo").value;
+    if (s === "" || min === "") {
+        vpChip.className = "chip";
+        vpChip.textContent = "—";
         return;
     }
-    try {
-        const respuesta = await fetch(`${API}/${m.id}`, { method: "DELETE" });
-        if (!respuesta.ok) throw new Error("No se pudo eliminar (error " + respuesta.status + ").");
-        mostrarMensaje("Medicamento eliminado.", false);
-        cargarMedicamentos();
-    } catch (error) {
-        mostrarMensaje(error.message, true);
-    }
+    const estado = estadoDe(parseInt(s, 10), parseInt(min, 10));
+    vpChip.className = "chip " + claseEstado(estado);
+    vpChip.textContent = estado.charAt(0) + estado.slice(1).toLowerCase();
 }
+["stock", "stockMinimo"].forEach(id => campo(id).addEventListener("input", actualizarVistaPrevia));
 
 
-// 6. MENSAJES debajo del formulario
+// 8. Búsqueda y filtros
+buscador.addEventListener("input", dibujarTabla);
+document.querySelectorAll(".filtro").forEach(btn => btn.addEventListener("click", () => {
+    document.querySelectorAll(".filtro").forEach(b => b.classList.remove("activo"));
+    btn.classList.add("activo");
+    filtroEstado = btn.dataset.estado;
+    dibujarTabla();
+}));
+
+
+// 9. Mensajes
+let temporizador;
 function mostrarMensaje(texto, esError) {
     mensaje.textContent = texto;
-    mensaje.className   = esError ? "error" : "ok";
+    mensaje.className   = texto ? (esError ? "error" : "ok") : "";
+    clearTimeout(temporizador);
+    if (texto && !esError) temporizador = setTimeout(() => mostrarMensaje("", false), 4000);
 }
 
 
-// 7. INICIO: al abrir la página se cargan los datos de PostgreSQL
+// 10. INICIO
+const hoy = new Date().toLocaleDateString("es-PE",
+    { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+campo("fecha").textContent = hoy.charAt(0).toUpperCase() + hoy.slice(1);
+actualizarVistaPrevia();
 cargarMedicamentos();

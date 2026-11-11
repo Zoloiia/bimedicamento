@@ -3,84 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Botica · Inventario de medicamentos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
-    <title>Gestión de Medicamentos</title>
 </head>
 <body>
 
-    <!-- ENCABEZADO -->
-    <h1>Sistema de Gestión de Medicamentos</h1>
-    <hr>
-
-    <!-- SECCIÓN 1: FORMULARIO (app.js lo envía con fetch, sin recargar) -->
-    <h2 id="titulo-formulario">Registrar Nuevo Medicamento</h2>
-
-    <form id="formulario">
-
-        <!-- Oculto: guarda el ID cuando se EDITA. Vacío = registro nuevo -->
-        <input type="hidden" id="id">
-
+<header class="topbar">
+    <div class="marca">
+        <span class="marca-icono" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><rect x="4" y="11" width="24" height="10" rx="5"/><line x1="16" y1="11" x2="16" y2="21"/></svg>
+        </span>
         <div>
-            <label for="nombre">Nombre del Medicamento:</label><br>
-            <input type="text" id="nombre" name="nombre" placeholder="Ej. Paracetamol" required>
+            <p class="marca-nombre">Gestión de Medicamentos</p>
+            <p class="marca-sub">Inventario · PostgreSQL</p>
         </div>
-        <br>
+    </div>
+    <p class="fecha" id="fecha"></p>
+</header>
 
-        <div>
-            <label for="laboratorio">Laboratorio / Marca:</label><br>
-            <input type="text" id="laboratorio" name="laboratorio" placeholder="Ej. Bayer" required>
+<main class="contenedor">
+
+    <!-- RESUMEN -->
+    <section class="resumen" aria-label="Resumen del inventario">
+        <div class="dato">
+            <p class="dato-etiqueta">Productos</p>
+            <p class="dato-valor" id="r-total">–</p>
         </div>
-        <br>
-
-        <div>
-            <label for="stock">Cantidad en Stock:</label><br>
-            <input type="number" id="stock" name="stock" min="0" placeholder="Ej. 50" required>
+        <div class="dato">
+            <p class="dato-etiqueta">Unidades en stock</p>
+            <p class="dato-valor" id="r-unidades">–</p>
         </div>
-        <br>
-
-        <!-- NUEVO: debajo de este número sale la alerta -->
-        <div>
-            <label for="stockMinimo">Stock Mínimo (alerta):</label><br>
-            <input type="number" id="stockMinimo" name="stockMinimo" min="0" value="10" required>
+        <div class="dato dato-alerta">
+            <p class="dato-etiqueta"><span class="punto bajo"></span>Stock bajo</p>
+            <p class="dato-valor" id="r-bajo">–</p>
         </div>
-        <br>
-
-        <div>
-            <label for="precio">Precio (S/):</label><br>
-            <input type="number" id="precio" name="precio" min="0" step="0.01" placeholder="Ej. 12.50" required>
+        <div class="dato dato-alerta">
+            <p class="dato-etiqueta"><span class="punto agotado"></span>Agotados</p>
+            <p class="dato-valor" id="r-agotado">–</p>
         </div>
-        <br>
+        <div class="dato">
+            <p class="dato-etiqueta">Valor del inventario</p>
+            <p class="dato-valor" id="r-valor">–</p>
+        </div>
+    </section>
 
-        <button type="submit" id="btn-guardar">Guardar Medicamento</button>
-        <button type="button" id="btn-cancelar" hidden>Cancelar edición</button>
+    <div class="rejilla">
 
-        <!-- Mensajes de éxito o error -->
-        <p id="mensaje" role="status"></p>
+        <!-- FORMULARIO -->
+        <aside class="panel panel-form">
+            <div class="panel-cabecera">
+                <h2 id="titulo-formulario">Registrar medicamento</h2>
+                <p class="ayuda" id="ayuda-formulario">Completa los datos y guarda. El estado se calcula solo.</p>
+            </div>
 
+            <form id="formulario" novalidate>
+                <input type="hidden" id="id">
+
+                <div class="campo">
+                    <label for="nombre">Nombre</label>
+                    <input type="text" id="nombre" placeholder="Paracetamol 500mg" required autocomplete="off">
+                </div>
+
+                <div class="campo">
+                    <label for="laboratorio">Laboratorio</label>
+                    <input type="text" id="laboratorio" placeholder="Bayer" required autocomplete="off">
+                </div>
+
+                <div class="campo-doble">
+                    <div class="campo">
+                        <label for="stock">Stock</label>
+                        <input type="number" id="stock" min="0" placeholder="50" required>
+                    </div>
+                    <div class="campo">
+                        <label for="stockMinimo">Stock mínimo</label>
+                        <input type="number" id="stockMinimo" min="0" value="10" required>
+                    </div>
+                </div>
+
+                <div class="campo">
+                    <label for="precio">Precio unitario</label>
+                    <div class="con-prefijo">
+                        <span>S/</span>
+                        <input type="number" id="precio" min="0" step="0.01" placeholder="12.50" required>
+                    </div>
+                </div>
+
+                <div class="vista-previa" id="vista-previa" aria-live="polite">
+                    <span class="vp-etiqueta">Estado al guardar</span>
+                    <span class="chip" id="vp-chip">—</span>
+                </div>
+
+                <div class="acciones-form">
+                    <button type="submit" class="btn btn-primario" id="btn-guardar">Guardar medicamento</button>
+                    <button type="button" class="btn btn-secundario" id="btn-cancelar" hidden>Cancelar edición</button>
+                </div>
+
+                <p id="mensaje" role="status"></p>
+            </form>
+        </aside>
+
+        <!-- LISTA -->
+        <section class="panel panel-lista">
+            <div class="lista-cabecera">
+                <h2>Inventario</h2>
+                <div class="herramientas">
+                    <label class="buscador">
+                        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="6"/><line x1="13.5" y1="13.5" x2="18" y2="18"/></svg>
+                        <span class="sr-only">Buscar</span>
+                        <input type="search" id="buscar" placeholder="Buscar por nombre o laboratorio">
+                    </label>
+                    <div class="filtros" role="group" aria-label="Filtrar por estado">
+                        <button type="button" class="filtro activo" data-estado="TODOS">Todos</button>
+                        <button type="button" class="filtro" data-estado="NORMAL">Normal</button>
+                        <button type="button" class="filtro" data-estado="STOCK BAJO">Stock bajo</button>
+                        <button type="button" class="filtro" data-estado="AGOTADO">Agotado</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabla-envoltura">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-id">ID</th>
+                            <th>Medicamento</th>
+                            <th>Nivel de stock</th>
+                            <th class="num">Precio</th>
+                            <th>Estado</th>
+                            <th class="col-acciones"><span class="sr-only">Acciones</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-medicamentos"></tbody>
+                </table>
+            </div>
+            <p class="pie-lista" id="pie-lista"></p>
+        </section>
+    </div>
+</main>
+
+<!-- Confirmación para eliminar -->
+<dialog id="dialogo">
+    <form method="dialog">
+        <h3>¿Eliminar medicamento?</h3>
+        <p id="dialogo-texto"></p>
+        <div class="dialogo-acciones">
+            <button value="no" class="btn btn-secundario">Cancelar</button>
+            <button value="si" class="btn btn-peligro">Eliminar</button>
+        </div>
     </form>
+</dialog>
 
-    <hr>
-
-    <!-- SECCIÓN 2: TABLA. El <tbody> está vacío: app.js lo llena desde PostgreSQL -->
-    <h2>Lista de Medicamentos Registrados</h2>
-
-    <table border="1">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Laboratorio</th>
-                <th>Stock</th>
-                <th>Stock Mín.</th>
-                <th>Precio</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody id="tabla-medicamentos"></tbody>
-    </table>
-
-    <!-- app.js va al final, cuando el formulario y la tabla ya existen -->
-    <script src="/js/app.js"></script>
+<script src="/js/app.js"></script>
 </body>
 </html>
